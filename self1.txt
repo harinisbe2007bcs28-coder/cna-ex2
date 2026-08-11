@@ -1,0 +1,99 @@
+#include <stdio.h>
+#include <string.h>
+
+void xor_div(char *dividend, const char *generator, int gen_len) {
+    for (int i = 0; i < gen_len; i++) {
+        dividend[i] = (dividend[i] == generator[i]) ? '0' : '1';
+    }
+}
+
+void crc_division(const char *input, const char *generator, char *remainder) {
+    int input_len = strlen(input);
+    int gen_len = strlen(generator);
+    char temp[200];
+    
+    strcpy(temp, input);
+
+    for (int i = 0; i <= input_len - gen_len; i++) {
+        if (temp[i] == '1') {
+            xor_div(&temp[i], generator, gen_len);
+        }
+    }
+
+    strncpy(remainder, &temp[input_len - (gen_len - 1)], gen_len - 1);
+    remainder[gen_len - 1] = '\0';
+}
+
+int is_remainder_zero(const char *remainder) {
+    for (int i = 0; remainder[i] != '\0'; i++) {
+        if (remainder[i] != '0') return 0;
+    }
+    return 1;
+}
+
+void flip_bit(char *str, int pos) {
+    if (pos >= 0 && pos < (int)strlen(str)) {
+        str[pos] = (str[pos] == '0') ? '1' : '0';
+    }
+}
+
+void verify_receiver(const char *tx_codeword, const char *rx_codeword, const char *generator, const char *case_name) {
+    char receiver_remainder[100];
+    
+    crc_division(rx_codeword, generator, receiver_remainder);
+
+    printf("\n--- Simulation: %s ---\n", case_name);
+    printf("Transmitted Codeword : %s\n", tx_codeword);
+    printf("Received Codeword    : %s\n", rx_codeword);
+    printf("Receiver Remainder   : %s\n", receiver_remainder);
+    
+    if (is_remainder_zero(receiver_remainder)) {
+        printf("Status               : NO ERROR DETECTED (Data Accepted)\n");
+    } else {
+        printf("Status               : ERROR DETECTED! (Data Corrupted)\n");
+    }
+}
+
+int main() {
+    char data[100], generator[100], padded_data[200], sender_remainder[100], tx_codeword[200];
+    char rx_codeword[200];
+
+    printf("Enter Binary Data: ");
+    scanf("%s", data);
+    printf("Enter Generator Polynomial: ");
+    scanf("%s", generator);
+
+    int data_len = strlen(data);
+    int gen_len = strlen(generator);
+
+    strcpy(padded_data, data);
+    for (int i = 0; i < gen_len - 1; i++) {
+        strcat(padded_data, "0");
+    }
+
+    crc_division(padded_data, generator, sender_remainder);
+
+    strcpy(tx_codeword, data);
+    strcat(tx_codeword, sender_remainder);
+
+    printf("\n================ SENDER SIDE ================\n");
+    printf("Binary Data         : %s\n", data);
+    printf("Generator           : %s\n", generator);
+    printf("Calculated CRC/FCS  : %s\n", sender_remainder);
+    printf("Transmitted Codeword: %s\n", tx_codeword);
+    printf("=============================================\n");
+
+    strcpy(rx_codeword, tx_codeword);
+    verify_receiver(tx_codeword, rx_codeword, generator, "No Error");
+
+    strcpy(rx_codeword, tx_codeword);
+    flip_bit(rx_codeword, 2);
+    verify_receiver(tx_codeword, rx_codeword, generator, "Single-Bit Error");
+
+    strcpy(rx_codeword, tx_codeword);
+    flip_bit(rx_codeword, 0);
+    flip_bit(rx_codeword, 3);
+    verify_receiver(tx_codeword, rx_codeword, generator, "Multiple-Bit Error");
+
+    return 0;
+}
