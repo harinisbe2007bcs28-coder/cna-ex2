@@ -1,0 +1,71 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+int compare(const void* a, const void* b) {
+    return (*(int*)a - *(int*)b);
+}
+
+int subarrayBitwiseORs(int* arr, int arrSize) {
+    int* global_ans = (int*)malloc(arrSize * 32 * sizeof(int));
+    int global_count = 0;
+
+    int* cur = (int*)malloc(32 * sizeof(int));
+    int cur_size = 0;
+
+    for (int i = 0; i < arrSize; i++) {
+        int* next = (int*)malloc(32 * sizeof(int));
+        int next_size = 0;
+
+        next[next_size++] = arr[i];
+        global_ans[global_count++] = arr[i];
+
+        for (int j = 0; j < cur_size; j++) {
+            int or_val = cur[j] | arr[i];
+            
+            int exists = 0;
+            for (int k = 0; k < next_size; k++) {
+                if (next[k] == or_val) {
+                    exists = 1;
+                    break;
+                }
+            }
+            if (!exists) {
+                next[next_size++] = or_val;
+                global_ans[global_count++] = or_val;
+            }
+        }
+
+        free(cur);
+        cur = next;
+        cur_size = next_size;
+    }
+    free(cur);
+
+    qsort(global_ans, global_count, sizeof(int), compare);
+
+    int unique_count = 0;
+    if (global_count > 0) {
+        unique_count = 1;
+        for (int i = 1; i < global_count; i++) {
+            if (global_ans[i] != global_ans[i - 1]) {
+                unique_count++;
+            }
+        }
+    }
+
+    free(global_ans);
+    return unique_count;
+}
+
+int main() {
+    int arr1[] = {0};
+    printf("Output: %d\n", subarrayBitwiseORs(arr1, 1));
+
+    int arr2[] = {1, 1, 2};
+    printf("Output: %d\n", subarrayBitwiseORs(arr2, 3));
+
+    int arr3[] = {1, 2, 4};
+    printf("Output: %d\n", subarrayBitwiseORs(arr3, 3));
+
+    return 0;
+}
